@@ -2,7 +2,7 @@
 
 ## Ajeitar layout
 
-![layout](../assets/eclipse01.png)
+![layout](../assets/eclipseLayout.png)
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## Debug
 
-![debug](../assets/eclipse02.png)
+![debug](../assets/eclipseDebug.png)
 
 ## Gerar construtores, getters e setters automaticamente
 

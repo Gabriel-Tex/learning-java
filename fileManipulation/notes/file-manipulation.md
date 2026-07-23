@@ -423,6 +423,92 @@ try (FileOutputStream fos = new FileOutputStream("copia.png");
 
 > Regra geral: `Reader`/`Writer` (e suas subclasses) trabalham com **caracteres** (texto); `InputStream`/`OutputStream` (e suas subclasses) trabalham com **bytes** (dados binários).
 
+## 9.1 Monitorando diretórios em tempo real: `WatchService`
+
+Além de ler, escrever e listar, a NIO.2 permite **observar mudanças** em um diretório (arquivo criado, apagado ou modificado) sem precisar ficar checando manualmente em loop (*polling*). Isso é feito com `WatchService`, registrado em um `Path`.
+
+```java
+import java.nio.file.*;
+
+public class Monitor {
+    public static void main(String[] args) throws IOException, InterruptedException {
+
+        Path dir = Path.of("C:\\temp");
+
+        // 1. cria o serviço de observação
+        WatchService watcher = FileSystems.getDefault().newWatchService();
+
+        // 2. registra o diretório e os tipos de evento de interesse
+        dir.register(watcher,
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_DELETE,
+                StandardWatchEventKinds.ENTRY_MODIFY);
+
+        // 3. loop de observação (bloqueante)
+        while (true) {
+            WatchKey key = watcher.take(); // bloqueia até haver um evento
+
+            for (WatchEvent<?> event : key.pollEvents()) {
+                System.out.println(event.kind() + ": " + event.context());
+            }
+
+            // reseta a key para continuar recebendo eventos; se retornar false,
+            // o diretório ficou inacessível e o loop deve ser interrompido
+            boolean valid = key.reset();
+            if (!valid) break;
+        }
+    }
+}
+```
+
+> Uso típico: *hot reload* de configuração, sincronização de pastas, gatilhos de build (ex: recompilar quando um `.java` muda). Referência: [`WatchService`](https://docs.oracle.com/javase/10/docs/api/java/nio/file/WatchService.html)
+
+## 9.2 Percorrendo árvores de diretório: `Files.walkFileTree` e `FileVisitor`
+
+Já vimos `Files.walk()` (seção 8.2), que retorna um `Stream<Path>` simples — ótimo para filtros rápidos. Quando é preciso um controle mais fino sobre a travessia (ex: agir diferente ao entrar/sair de cada pasta, ou abortar a busca antecipadamente), usa-se `Files.walkFileTree` com a interface `FileVisitor`.
+
+```java
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+
+Path start = Path.of("C:\\temp\\projeto");
+
+Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+        System.out.println("Entrando na pasta: " + dir);
+        return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+        System.out.println("Arquivo: " + file + " (" + attrs.size() + " bytes)");
+        return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+        System.out.println("Falha ao acessar: " + file);
+        return FileVisitResult.CONTINUE; // não aborta a travessia inteira
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+        System.out.println("Saindo da pasta: " + dir);
+        return FileVisitResult.CONTINUE;
+    }
+});
+```
+
+`SimpleFileVisitor` é uma implementação padrão de `FileVisitor` onde todos os métodos apenas retornam `CONTINUE` — basta sobrescrever os que interessam. Os retornos possíveis (`FileVisitResult`) permitem controle fino:
+- `CONTINUE` — segue normalmente
+- `SKIP_SUBTREE` — pula toda a subárvore da pasta atual (útil em `preVisitDirectory`)
+- `SKIP_SIBLINGS` — pula os irmãos restantes no mesmo nível
+- `TERMINATE` — aborta a travessia inteira
+
+> Use `Files.walk()` quando bastar um `Stream` para filtrar/coletar; use `Files.walkFileTree` quando precisar de lógica de entrada/saída de diretório ou de abortar a busca cedo.
+
 ---
 
 ## 10. Boas práticas
@@ -440,17 +526,3 @@ try (FileOutputStream fos = new FileOutputStream("copia.png");
 8. **Use caminhos relativos ou configuráveis** (não *hardcoded*) sempre que possível, para portabilidade entre ambientes de desenvolvimento, teste e produção.
 9. **Ao mover/copiar arquivos importantes, use `StandardCopyOption.ATOMIC_MOVE`** quando a atomicidade for crítica (ex: evitar arquivo corrompido em caso de falha no meio da operação).
 10. **Prefira `Files.createDirectories()` a `mkdir()`/`mkdirs()`** quando precisar tratar falhas com exceções específicas em vez de apenas um `boolean`.
-
----
-
-## 11. Resumo mental (cheat sheet)
-
-- `File` → representa (não lê/escreve) um caminho; API antiga, retorna `boolean` em erros.
-- `Scanner(File)` → forma simples de ler texto linha a linha, lança `IOException`.
-- `FileReader`/`FileWriter` → leitura/escrita de **caracteres**, um a um.
-- `BufferedReader`/`BufferedWriter` → decoram os anteriores com *buffer*, mais rápidos, oferecem `readLine()`/`newLine()`.
-- `PrintWriter` → escrita conveniente com `println()`/`printf()`.
-- `try-with-resources` → fecha recursos `AutoCloseable` automaticamente; forma recomendada desde o Java 7.
-- `FileInputStream`/`FileOutputStream` → leitura/escrita de **bytes** (dados binários).
-- `Path` + `Files` (NIO.2, Java 7+) → API moderna e recomendada; exceções específicas, streaming, atomicidade, melhor suporte a metadados.
-- Sempre feche recursos; sempre trate `IOException` de forma específica; prefira NIO.2 em código novo.
