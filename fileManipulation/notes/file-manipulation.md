@@ -393,37 +393,7 @@ try (Stream<Path> stream = Files.walk(dirPath)) {
 
 > Para código legado ou integração com bibliotecas antigas que exigem `File`, é possível converter facilmente entre as duas APIs: `path.toFile()` e `file.toPath()`.
 
----
-
-## 9. Leitura/escrita de dados binários: streams de byte
-
-Quando o conteúdo não é texto (imagens, arquivos compactados, serialização de objetos etc.), usam-se *streams* de **bytes** em vez de caracteres:
-
-```java
-import java.io.*;
-
-// Leitura binária
-try (FileInputStream fis = new FileInputStream("imagem.png");
-     BufferedInputStream bis = new BufferedInputStream(fis)) {
-
-    int b;
-    while ((b = bis.read()) != -1) {
-        // processar byte a byte (ou usar bis.readAllBytes() para ler tudo de uma vez)
-    }
-}
-
-// Escrita binária
-try (FileOutputStream fos = new FileOutputStream("copia.png");
-     BufferedOutputStream bos = new BufferedOutputStream(fos)) {
-
-    byte[] dados = Files.readAllBytes(Path.of("imagem.png"));
-    bos.write(dados);
-}
-```
-
-> Regra geral: `Reader`/`Writer` (e suas subclasses) trabalham com **caracteres** (texto); `InputStream`/`OutputStream` (e suas subclasses) trabalham com **bytes** (dados binários).
-
-## 9.1 Monitorando diretórios em tempo real: `WatchService`
+### 8.4 Monitorando diretórios em tempo real: `WatchService`
 
 Além de ler, escrever e listar, a NIO.2 permite **observar mudanças** em um diretório (arquivo criado, apagado ou modificado) sem precisar ficar checando manualmente em loop (*polling*). Isso é feito com `WatchService`, registrado em um `Path`.
 
@@ -463,7 +433,7 @@ public class Monitor {
 
 > Uso típico: *hot reload* de configuração, sincronização de pastas, gatilhos de build (ex: recompilar quando um `.java` muda). Referência: [`WatchService`](https://docs.oracle.com/javase/10/docs/api/java/nio/file/WatchService.html)
 
-## 9.2 Percorrendo árvores de diretório: `Files.walkFileTree` e `FileVisitor`
+### 8.5 Percorrendo árvores de diretório: `Files.walkFileTree` e `FileVisitor`
 
 Já vimos `Files.walk()` (seção 8.2), que retorna um `Stream<Path>` simples — ótimo para filtros rápidos. Quando é preciso um controle mais fino sobre a travessia (ex: agir diferente ao entrar/sair de cada pasta, ou abortar a busca antecipadamente), usa-se `Files.walkFileTree` com a interface `FileVisitor`.
 
@@ -511,6 +481,36 @@ Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
 
 ---
 
+## 9. Leitura/escrita de dados binários: streams de byte
+
+Quando o conteúdo não é texto (imagens, arquivos compactados, serialização de objetos etc.), usam-se *streams* de **bytes** em vez de caracteres:
+
+```java
+import java.io.*;
+
+// Leitura binária
+try (FileInputStream fis = new FileInputStream("imagem.png");
+     BufferedInputStream bis = new BufferedInputStream(fis)) {
+
+    int b;
+    while ((b = bis.read()) != -1) {
+        // processar byte a byte (ou usar bis.readAllBytes() para ler tudo de uma vez)
+    }
+}
+
+// Escrita binária
+try (FileOutputStream fos = new FileOutputStream("copia.png");
+     BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+
+    byte[] dados = Files.readAllBytes(Path.of("imagem.png"));
+    bos.write(dados);
+}
+```
+
+> Regra geral: `Reader`/`Writer` (e suas subclasses) trabalham com **caracteres** (texto); `InputStream`/`OutputStream` (e suas subclasses) trabalham com **bytes** (dados binários).
+
+---
+
 ## 10. Boas práticas
 
 1. **Sempre use `try-with-resources`** para qualquer classe `AutoCloseable` (`FileReader`, `BufferedReader`, `FileWriter`, `InputStream`, conexões etc.) — evita vazamento de recursos e reduz *boilerplate*.
@@ -518,9 +518,9 @@ Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
 3. **Não leia arquivos grandes inteiros em memória** (`readAllLines`, `readAllBytes`) sem necessidade — para arquivos grandes, prefira leitura em *stream* (`Files.lines()`, `BufferedReader.readLine()` em loop).
 4. **Sempre trate `IOException`** de forma específica quando possível (`FileNotFoundException`, `NoSuchFileException` etc.), fornecendo mensagens úteis ao usuário — evite apenas repassar a *stack trace* crua em aplicações de produção.
 5. **Defina o charset explicitamente** ao ler/escrever texto, especialmente em sistemas que trocam arquivos entre plataformas diferentes:
-   ```java
+```java
    Files.readString(path, StandardCharsets.UTF_8);
-   ```
+```
 6. **Verifique existência e permissões antes de operar**, mas esteja ciente de condições de corrida (*race conditions* — o arquivo pode ser removido entre a verificação e o uso); por isso, capturar a exceção resultante da operação real ainda é necessário mesmo após checar `exists()`.
 7. **Feche recursos na ordem correta** — com `try-with-resources` isso é automático (ordem inversa à declaração); se fechar manualmente, feche o *wrapper* (`BufferedReader`) antes do recurso interno (`FileReader`), embora fechar o wrapper já feche a cadeia internamente na maioria dos casos.
 8. **Use caminhos relativos ou configuráveis** (não *hardcoded*) sempre que possível, para portabilidade entre ambientes de desenvolvimento, teste e produção.
