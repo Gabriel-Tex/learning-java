@@ -380,17 +380,3 @@ class SaldoInsuficienteException extends Exception {
     }
 }
 ```
-
----
-
-## 11. Resumo mental (cheat sheet)
-
-- `Throwable` → raiz de tudo; `Error` (não tratável) e `Exception` (tratável).
-- **Checked** (`Exception` "pura") → compilador obriga tratar/propagar → erros externos recuperáveis.
-- **Unchecked** (`RuntimeException`) → compilador não obriga → geralmente bugs de programação.
-- `try` → código arriscado; `catch` → tratamento (do mais específico ao mais genérico); `finally` → sempre executa.
-- `try-with-resources` → forma moderna de fechar recursos automaticamente (`AutoCloseable`).
-- `throw` → lança uma instância; `throws` → declara na assinatura.
-- Exceções personalizadas → sufixo `Exception`, herdam de `Exception` (checked) ou `RuntimeException` (unchecked).
-- Sempre preserve a `cause` ao encadear exceções.
-- Nunca capture e ignore silenciosamente.
