@@ -10,4 +10,5 @@
 | 6 | arquitetura macro (C4 model) | 
 
 C4 model: [documentation](https://c4model.com/introduction)
+
 structurizr: [tool](https://structurizr.com/)

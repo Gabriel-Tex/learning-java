@@ -35,7 +35,7 @@ public class Program {
 
         process.processContract();
 
-        contract.printInstallments();
+        process.printInstallment();
 
         sc.close();
     }

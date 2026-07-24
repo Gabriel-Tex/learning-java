@@ -1,27 +1,29 @@
 package OOP.interfaces.exercise02.src.model.services;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import OOP.interfaces.exercise02.src.model.entities.Contract;
+import OOP.interfaces.exercise02.src.model.entities.Installment;
 
 public class ProcessContractService {
-    private Integer numberInstallments;
+    private Integer numberOfInstallments;
     private Contract contract;
 
     PaymentService paymentService;
 
-    public ProcessContractService(Integer numberInstallments, Contract contract, PaymentService paymentService) {
-        this.numberInstallments = numberInstallments;
+    public ProcessContractService(Integer numberOfInstallments, Contract contract, PaymentService paymentService) {
+        this.numberOfInstallments = numberOfInstallments;
         this.contract = contract;
         this.paymentService = paymentService;
     }
 
-    public Integer getNumberInstallments() {
-        return numberInstallments;
+    public Integer getNumberOfInstallments() {
+        return numberOfInstallments;
     }
 
-    public void setNumberInstallments(Integer numberInstallments) {
-        this.numberInstallments = numberInstallments;
+    public void setNumberOfInstallments(Integer numberOfInstallments) {
+        this.numberOfInstallments = numberOfInstallments;
     }
 
     public Contract getContract() {
@@ -33,32 +35,39 @@ public class ProcessContractService {
     }
 
     public void processContract() {
-        // pegar o valor da primeira parcela sem juros e taxa
-        /*
-         * loop -> i:
-         * parcela = parcela * (juros * (i+1)) + parcela
-         * parcela = (parcela * taxa) + parcela
-         * 
-         * guardar parcela em uma lista
-         */
         double totalValue = contract.getTotalValue();
-        double grossInstallment = totalValue / getNumberInstallments();
+        double grossInstallment = totalValue / getNumberOfInstallments();
 
         double newInstallment;
 
         LocalDate dateInstallment = contract.getDate();
 
-        for (int i = 0; i < getNumberInstallments(); ++i) {
+        for (int i = 0; i < getNumberOfInstallments(); ++i) {
             newInstallment = grossInstallment;
             // processando o valor das parcelas
-            newInstallment = newInstallment * (paymentService.getInterest() * (i + 1)) + newInstallment;
-            newInstallment = (newInstallment * paymentService.getTax()) + newInstallment;
-
-            contract.getInstallments().add(newInstallment);
+            newInstallment = paymentService.getInterestValue(newInstallment, (i+1)) + newInstallment;
+            newInstallment = paymentService.getTaxValue(newInstallment) + newInstallment;
 
             // processando a data das parcelas
             dateInstallment = dateInstallment.plusMonths(1);
-            contract.getInstallmentsDates().add(dateInstallment);
+
+            contract.getInstallments().add(new Installment(dateInstallment, newInstallment));
+        }
+    }
+
+    public void printInstallment(){
+        if(contract.getInstallments() != null){
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            IO.println("PARCELAS: ");
+            for(Installment installment : contract.getInstallments()){
+                
+                IO.println(installment.getDueDate().format(fmt) + " - " + String.format("%.2f", installment.getValue()));
+            }
+        }
+        else{
+            IO.println("Contrato ainda não foi processado.");
         }
     }
 }

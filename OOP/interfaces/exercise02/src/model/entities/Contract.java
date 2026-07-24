@@ -1,7 +1,6 @@
 package OOP.interfaces.exercise02.src.model.entities;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,15 +9,13 @@ public class Contract {
     private LocalDate date;
     private Double totalValue;
 
-    private List<Double> installments;
-    private List<LocalDate> installmentsDates;
+    private List<Installment> installments;
 
     public Contract(String number, LocalDate date, Double totalValue) {
         this.number = number;
         this.date = date;
         this.totalValue = totalValue;
-        this.installments = new ArrayList<Double>();
-        this.installmentsDates = new ArrayList<LocalDate>();
+        this.installments = new ArrayList<Installment>();
     }
 
     public String getNumber() {
@@ -45,26 +42,8 @@ public class Contract {
         this.totalValue = totalValue;
     }
 
-    public List<Double> getInstallments() {
+    public List<Installment> getInstallments() {
         return installments;
     }
-
-    public List<LocalDate> getInstallmentsDates() {
-        return installmentsDates;
-    }
-
-    public void printInstallments() {
-        if (installments != null && installmentsDates != null) {
-
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-            IO.println("PARCELAS: ");
-
-            for (int i = 0; i < installments.size(); ++i) {
-                IO.println(installmentsDates.get(i).format(fmt) + " - " + String.format("%.2f", installments.get(i)));
-            }
-        } else {
-            IO.println("Parcelas não processadas.");
-        }
-    }
+    
 }
